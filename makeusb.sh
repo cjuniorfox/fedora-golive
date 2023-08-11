@@ -1,13 +1,7 @@
 #!/bin/bash
 set -x 
-USB_DRIVE="/dev/loop0p"
 
-EFI_SIZE="512M"        # EFI partition size
-LIVE_SIZE="8G"         # Fedora Live partition size
-HOME_SIZE="100%"       # Use the remaining space for /home
-
-LABEL_ROOT="golive-root"
-LABEL_HOME="golive-home"
+. ./environment.sh
 
 wipefs -a $USB_DRIVE
 
@@ -27,15 +21,15 @@ mkfs.ext4 "${USB_DRIVE}3" -L ${LABEL_HOME}
 
 UUID_ROOT=$(blkid -o value -s UUID ${USB_DRIVE}2)
 
-mkdir __efi
+mkdir ${MNT_EFI}
 
-mount "${USB_DRIVE}1" __efi
-mkdir -p __efi/EFI/{fedora,BOOT}
-cp -v /boot/efi/EFI/BOOT/* __efi/EFI/BOOT/
-find /boot/efi/EFI/fedora -name *.efi -exec cp -v {} __efi/EFI/fedora \;
-cp /boot/efi/EFI/fedora/BOOTX64.CSV __efi/EFI/fedora/
+mount "${USB_DRIVE}1" ${MNT_EFI}
+mkdir -p ${MNT_EFI}/EFI/{fedora,BOOT}
+cp -v /boot/efi/EFI/BOOT/* ${MNT_EFI}/EFI/BOOT/
+find /boot/efi/EFI/fedora -name *.efi -exec cp -v {} ${MNT_EFI}/EFI/fedora \;
+cp /boot/efi/EFI/fedora/BOOTX64.CSV ${MNT_EFI}/EFI/fedora/
 
-cat << EOF | tee >> __efi/EFI/fedora/grub.cfg
+cat << EOF | tee >> ${MNT_EFI}/EFI/fedora/grub.cfg
 set default="0"
 
 function load_video {
@@ -79,17 +73,17 @@ submenu 'Troubleshooting -->' {
 }
 EOF
 
-cp __efi/EFI/fedora/grub.cfg __efi/EFI/BOOT/BOOT.conf
-umount __efi
-rm -rfv __efi
-mkdir __root
-mount "${USB_DRIVE}2" __root
-mkdir -p __root/LiveOS
-truncate -s 2G "__root/LiveOS/overlay-${LABEL_ROOT}-${UUID_ROOT}"
-chmod u+rw,g-rwx,o-rwx "__root/LiveOS/overlay-${LABEL_ROOT}-${UUID_ROOT}"
-cp -Rv root/* __root/
-umount __root/
-rm -rfv __root/
+cp ${MNT_EFI}/EFI/fedora/grub.cfg ${MNT_EFI}/EFI/BOOT/BOOT.conf
+umount ${MNT_EFI}
+rm -rfv ${MNT_EFI}
+mkdir ${MNT_ROOT}
+mount "${USB_DRIVE}2" ${MNT_ROOT}
+mkdir -p ${MNT_ROOT}/LiveOS
+truncate -s 2G "${MNT_ROOT}/LiveOS/overlay-${LABEL_ROOT}-${UUID_ROOT}"
+chmod u+rw,g-rwx,o-rwx "${MNT_ROOT}/LiveOS/overlay-${LABEL_ROOT}-${UUID_ROOT}"
+cp -Rv root/* ${MNT_ROOT}/
+umount ${MNT_ROOT}/
+rm -rfv ${MNT_ROOT}/
 #mkdir __home
 #mount "${USB_DRIVE}3" __home
 #dd if=/dev/zero of=__home/persistent-overlay.img bs=512M count=4

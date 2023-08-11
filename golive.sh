@@ -1,30 +1,31 @@
 #!/bin/bash
 set -x
+. ./environment.sh
 
-mkdir -p {root/LiveOS,__root}
+mkdir -p {root/LiveOS,${MNT_ROOT}}
 truncate -s "$( expr $(df | grep '/$' | awk '{print $3}') +  1000000)"K root/LiveOS/rootfs.img
 mkfs.ext4 -L root root/LiveOS/rootfs.img
-mount -o loop root/LiveOS/rootfs.img __root/
+mount -o loop root/LiveOS/rootfs.img ${MNT_ROOT}/
 setenforce 0
-rsync -axHAWXS --numeric-ids --info=progress2 --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / __root/
+rsync -axHAWXS --numeric-ids --info=progress2 --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / ${MNT_ROOT}/
 setenforce 1
-cat << EOF | tee __root/etc/fstab
-#/dev/disk/by-label/home-golive /home/ ext4 defaults,nofail 0 0
+cat << EOF | tee ${MNT_ROOT}/etc/fstab
+/dev/disk/by-label/${LABEL_HOME} /home/ ext4 defaults,nofail 0 0
 vartmp   /var/tmp    tmpfs   defaults   0  0
 EOF
 
 home_dir=/home
 for user in $(ls $home_dir); do
 	if [ -d "$home_dir/$user" ]; then
-		mkdir -p "__root/home/$user"
-		cp -Rv /etc/skel/* "__root/home/$user/"
-		chown -R $user:$user "__root/home/$user"
-		chmod -R 700 "__root/home/$user"
+		mkdir -p "${MNT_ROOT}/home/$user"
+		cp -Rv /etc/skel/* "${MNT_ROOT}/home/$user/"
+		chown -R $user:$user "${MNT_ROOT}/home/$user"
+		chmod -R 700 "${MNT_ROOT}/home/$user"
 	fi
 done;
 
-umount __root/
-rm -rfv __root/
+umount ${MNT_ROOT}/
+rm -rfv ${MNT_ROOT}/
 mksquashfs root/ root/LiveOS/squashfs.img 
 rm -rfv root/LiveOS/rootfs.img
 
