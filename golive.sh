@@ -3,7 +3,8 @@ set -x
 . ./environment.sh
 
 mkdir -p {root/LiveOS,${MNT_ROOT}}
-truncate -s "$( expr $(df | grep '/$' | awk '{print $3}') +  1000000)"K root/LiveOS/rootfs.img
+SIZE="$(sudo rsync -axHAWXS --numeric-ids --stats --dry-run --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / /tmp/ 2> /dev/null | grep 'Total transferred file size' | awk '{print $5}' | sed 's/\.//g')"
+truncate -s "$( expr $(expr $SIZE + $SIZE / 10 )" root/LiveOS/rootfs.img
 mkfs.ext4 -L root root/LiveOS/rootfs.img
 mount -o loop root/LiveOS/rootfs.img ${MNT_ROOT}/
 setenforce 0
