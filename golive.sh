@@ -1,14 +1,13 @@
 #!/bin/bash
-set -x
 . ./environment.sh
 
 mkdir -p {root/LiveOS,${MNT_ROOT}}
 SIZE="$(sudo rsync -axHAWXS --numeric-ids --stats --dry-run --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / /tmp/ 2> /dev/null | grep 'Total transferred file size' | awk '{print $5}' | sed 's/\.//g')"
-truncate -s "$( expr $(expr $SIZE + $SIZE / 10 )" root/LiveOS/rootfs.img
+truncate -s "$(expr ${SIZE} \* 3 / 2 )" root/LiveOS/rootfs.img
 mkfs.ext4 -L root root/LiveOS/rootfs.img
 mount -o loop root/LiveOS/rootfs.img ${MNT_ROOT}/
 setenforce 0
-rsync -axHAWXS --numeric-ids --info=progress2 --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / ${MNT_ROOT}/
+rsync -axHAWXS --numeric-ids --info=progress2 --exclude=/home/* --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/var/logs/* --exclude=/var/cache/* --exclude=/lost+found/ --exclude=/var/lib/libvirt/images/ / ${MNT_ROOT}/
 setenforce 1
 cat << EOF | tee ${MNT_ROOT}/etc/fstab
 /dev/disk/by-label/${LABEL_HOME} /home/ ext4 defaults,nofail 0 0
@@ -16,14 +15,16 @@ vartmp   /var/tmp    tmpfs   defaults   0  0
 EOF
 
 home_dir=/home
-for user in $(ls $home_dir); do
-	if [ -d "$home_dir/$user" ]; then
-		mkdir -p "${MNT_ROOT}/home/$user"
-		cp -Rv /etc/skel/* "${MNT_ROOT}/home/$user/"
-		chown -R $user:$user "${MNT_ROOT}/home/$user"
-		chmod -R 700 "${MNT_ROOT}/home/$user"
-	fi
-done;
+#for user in $(ls $home_dir); do
+#	if [ -d "$home_dir/$user" ]; then
+#		mkdir -p "${MNT_ROOT}/home/$user"
+#		cp -Rv /etc/skel/.* "${MNT_ROOT}/home/$user/"
+#		chown -R $user:$user "${MNT_ROOT}/home/$user"
+#		chmod -R 700 "${MNT_ROOT}/home/$user"
+#	fi
+#done;
+
+run-parts ./scripts/
 
 umount ${MNT_ROOT}/
 rm -rfv ${MNT_ROOT}/
