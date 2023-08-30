@@ -2,8 +2,8 @@
 
 USB_DRIVE="/dev/sdb"
 
-EFI_SIZE="512M"        # EFI partition size
-LIVE_SIZE="6G"         # Fedora Live partition size
+EFI_SIZE="256M"        # EFI partition size
+LIVE_SIZE="8G"         # Fedora Live partition size
 HOME_SIZE="100%"       # Use the remaining space for /home
 
 LABEL_ROOT="golive-root"
