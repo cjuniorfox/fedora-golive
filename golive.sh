@@ -20,7 +20,7 @@ cat << EOF | tee ${MNT_ROOT}/etc/fstab
 vartmp   /var/tmp    tmpfs   defaults   0  0
 EOF
 echo "Running aditional scripts"
-run-parts ./scripts/
+run-parts ./scripts
 
 umount ${MNT_ROOT}/
 rm -rfv ${MNT_ROOT}/
@@ -39,4 +39,6 @@ hostonly="no"
 early_microcode="no"
 EOF
 dracut -f root/initrd.img
-cp -v /boot/vmlinuz-$(uname -r) root/vmlinuz
+#rsync -a -P "/usr/lib/modules/$(uname -r)/vmlinuz"  root/vmlinuz
+rsync -a -P "/usr/lib/modules/$(ls -t /usr/lib/modules/ | grep -e '.x86_64$' | head -n1)/vmlinuz"  root/vmlinuz
+
