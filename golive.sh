@@ -38,7 +38,6 @@ omit_dracutmodules+=" plymouth "
 hostonly="no"
 early_microcode="no"
 EOF
-dracut -f root/initrd.img
-#rsync -a -P "/usr/lib/modules/$(uname -r)/vmlinuz"  root/vmlinuz
-rsync -a -P "/usr/lib/modules/$(ls -t /usr/lib/modules/ | grep -e '.x86_64$' | head -n1)/vmlinuz"  root/vmlinuz
-
+kernel_ver="$(ls -t /usr/lib/modules/ | grep -e '.x86_64$' | head -n1)"
+dracut --verbose --kver $(uname -r) --kmoddir /lib/modules/${kernel_ver}/ --kernel-cmdline 'console=tty0 console=ttyS0' -f root/initrd.img
+rsync -a -P "/usr/lib/modules/$kernel_ver/vmlinuz"  root/vmlinuz
